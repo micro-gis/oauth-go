@@ -94,7 +94,7 @@ func cleanRequest(request *http.Request) {
 }
 
 func getAccessToken(accessTokenId string)(*accessToken, *errors.RestErr){
-	response, err := oauthRestClient.Get(fmt.Sprintf("http://127.0.0.1:8087/oauth/access_token/:%s",accessTokenId))
+	response, err := oauthRestClient.Get(fmt.Sprintf("http://127.0.0.1:8087/oauth/access_token/%s",accessTokenId))
 	if err != nil {
 		return nil, errors.NewBadRequestError("invalid access token provided")
 	}
