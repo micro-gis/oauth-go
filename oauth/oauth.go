@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/micro-gis/oauth-go/oauth/errors"
-	"github.com/federicoleon/go-httpclient/gohttp"
+	"github.com/yossefaz/go-http-client/gohttp"
 	"net/http"
 	"strconv"
 	"strings"
