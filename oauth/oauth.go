@@ -3,7 +3,7 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/micro-gis/oauth-go/oauth/errors"
+	errors "github.com/micro-gis/utils/rest_errors"
 	"github.com/yossefaz/go-http-client/gohttp"
 	"net/http"
 	"strconv"
@@ -99,21 +99,21 @@ func getAccessToken(accessTokenId string)(*accessToken, *errors.RestErr){
 		return nil, errors.NewBadRequestError("invalid access token provided")
 	}
 	if response == nil || response.StatusCode < 100 {
-		return nil, errors.NewInternalServerError("invalid restClient response when trying to get access token")
+		return nil, errors.NewInternalServerError("invalid restClient response when trying to get access token", err)
 	}
 
 	if response.StatusCode > 299 {
 		var restErr errors.RestErr
 		err := json.Unmarshal(response.Bytes(), &restErr)
 		if err != nil {
-			return nil, errors.NewInternalServerError("invalid error interface when trying to login user")
+			return nil, errors.NewInternalServerError("invalid error interface when trying to login user", err)
 		}
 		return nil, &restErr
 	}
 
 	var at accessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		return nil, errors.NewInternalServerError("error when trying to unmarshall access token")
+		return nil, errors.NewInternalServerError("error when trying to unmarshall access token", err)
 	}
 	return &at, nil
 }
