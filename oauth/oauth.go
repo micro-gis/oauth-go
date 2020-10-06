@@ -39,7 +39,7 @@ func IsPublic(request *http.Request) bool {
 	return request.Header.Get(headerPublic) == "true"
 }
 
-func AuthenticateRequest(request *http.Request) *errors.RestErr{
+func AuthenticateRequest(request *http.Request) errors.RestErr{
 	if request == nil {
 		return nil
 	}
@@ -51,7 +51,7 @@ func AuthenticateRequest(request *http.Request) *errors.RestErr{
 	}
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
-		if err.Status == http.StatusNotFound{
+		if err.Status() == http.StatusNotFound{
 			return nil
 		}
 		return err
@@ -93,7 +93,7 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXCallerId)
 }
 
-func getAccessToken(accessTokenId string)(*accessToken, *errors.RestErr){
+func getAccessToken(accessTokenId string)(*accessToken, errors.RestErr){
 	response, err := oauthRestClient.Get(fmt.Sprintf("http://127.0.0.1:8087/oauth/access_token/%s",accessTokenId))
 	if err != nil {
 		return nil, errors.NewBadRequestError("invalid access token provided")
@@ -108,7 +108,7 @@ func getAccessToken(accessTokenId string)(*accessToken, *errors.RestErr){
 		if err != nil {
 			return nil, errors.NewInternalServerError("invalid error interface when trying to login user", err)
 		}
-		return nil, &restErr
+		return nil, restErr
 	}
 
 	var at accessToken
