@@ -2,7 +2,6 @@ package oauth
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	errors2 "github.com/micro-gis/utils/rest_errors"
 	"github.com/yossefaz/go-http-client/gohttp"
@@ -43,10 +42,24 @@ func getTokenParamFromRequest(request *http.Request) (*string, errors2.RestErr) 
 }
 
 func IsPublic(request *http.Request) bool {
+	err := AuthenticateRequest(request)
+	if err != nil {
+		return true
+	}
 	if request == nil {
 		return true
 	}
-	return request.Header.Get(headerPublic) == "true"
+	if request.Header.Get(headerXCallerId) != "" {
+		return false
+	}
+	if request.Header.Get(headerPublic) == "true" {
+		return true
+	}
+	if request.Header.Get(headerPublic) == "" && request.Header.Get(headerXCallerId) == "" {
+		return true
+	}
+
+	return true
 }
 
 func AuthenticateRequest(request *http.Request) errors2.RestErr{
@@ -81,24 +94,6 @@ func GetCallerId(request *http.Request) int64 {
 		return 0
 	}
 	return callerId
-}
-
-func GetUserId(request *http.Request) (int64, errors2.RestErr) {
-	accessTokenId, err := getTokenParamFromRequest(request)
-	if err != nil {
-		return 0, err
-	}
-	at, aterr := getAccessToken(*accessTokenId)
-	if aterr != nil {
-		if aterr.Status() == http.StatusNotFound{
-			return 0, errors2.NewUnauthorizedError("unknown token provided")
-		}
-		return 0, aterr
-	}
-	if request == nil {
-		return 0, errors2.NewInternalServerError("bad request", errors.New("trying to get user id : request params is not valid"))
-	}
-	return at.UserId, nil
 }
 
 func GetClientId(request *http.Request) int64{
