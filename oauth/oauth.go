@@ -139,7 +139,7 @@ func getAccessToken(accessTokenId string)(*accessToken, errors2.RestErr){
 	return &at, nil
 }
 
-func deleteAllAccessToken(accessTokenId string)errors2.RestErr{
+func DeleteAllAccessToken(accessTokenId string)errors2.RestErr{
 	response, err := oauthRestClient.Delete(fmt.Sprintf("%s/oauth/access_token/%s",baseOauthURL, accessTokenId))
 	if response == nil || response.StatusCode < 100 {
 		return errors2.NewInternalServerError("invalid restClient response when trying to get access token", err)
