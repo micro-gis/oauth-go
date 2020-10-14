@@ -34,6 +34,14 @@ func init() {
 	oauthRestClient = gohttp.NewBuilder().SetConnectionTimeout(200 * time.Millisecond).Build()
 }
 
+func getTokenParamFromRequest(request *http.Request) (*string, errors2.RestErr) {
+	accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
+	if accessTokenId == ""{
+		return nil, errors2.NewUnauthorizedError("access token is missing")
+	}
+	return &accessTokenId, nil
+}
+
 func IsPublic(request *http.Request) bool {
 	if request == nil {
 		return true
@@ -47,11 +55,11 @@ func AuthenticateRequest(request *http.Request) errors2.RestErr{
 	}
 	cleanRequest(request)
 
-	accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
-	if accessTokenId == ""{
+	accessTokenId, err := getTokenParamFromRequest(request)
+	if err != nil {
 		return nil
 	}
-	at, err := getAccessToken(accessTokenId)
+	at, err := getAccessToken(*accessTokenId)
 	if err != nil {
 		if err.Status() == http.StatusNotFound{
 			return errors2.NewUnauthorizedError("unknown token provided")
@@ -76,16 +84,16 @@ func GetCallerId(request *http.Request) int64 {
 }
 
 func GetUserId(request *http.Request) (int64, errors2.RestErr) {
-	accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
-	if accessTokenId == ""{
-		return 0, errors2.NewUnauthorizedError("access token is missing")
-	}
-	at, err := getAccessToken(accessTokenId)
+	accessTokenId, err := getTokenParamFromRequest(request)
 	if err != nil {
-		if err.Status() == http.StatusNotFound{
+		return 0, err
+	}
+	at, aterr := getAccessToken(*accessTokenId)
+	if aterr != nil {
+		if aterr.Status() == http.StatusNotFound{
 			return 0, errors2.NewUnauthorizedError("unknown token provided")
 		}
-		return 0, err
+		return 0, aterr
 	}
 	if request == nil {
 		return 0, errors2.NewInternalServerError("bad request", errors.New("trying to get user id : request params is not valid"))
@@ -139,16 +147,20 @@ func getAccessToken(accessTokenId string)(*accessToken, errors2.RestErr){
 	return &at, nil
 }
 
-func DeleteAllAccessToken(accessTokenId string)errors2.RestErr{
-	response, err := oauthRestClient.Delete(fmt.Sprintf("%s/oauth/access_token/%s",baseOauthURL, accessTokenId))
+func DeleteAllAccessToken(request *http.Request)errors2.RestErr{
+	accessTokenId, err := getTokenParamFromRequest(request)
+	if err != nil {
+		return err
+	}
+	response, delerr := oauthRestClient.Delete(fmt.Sprintf("%s/oauth/access_token/%s",baseOauthURL, *accessTokenId))
 	if response == nil || response.StatusCode < 100 {
-		return errors2.NewInternalServerError("invalid restClient response when trying to get access token", err)
+		return errors2.NewInternalServerError("invalid restClient response when trying to delete user's token", delerr)
 	}
 
 	if response.StatusCode > 299 {
 		restErr, err := errors2.NewRestErrorFromBytes(response.Bytes())
 		if err != nil {
-			return errors2.NewInternalServerError("invalid error interface when trying to login user", err)
+			return errors2.NewInternalServerError("invalid error interface when trying to delete user's token", err)
 		}
 		return restErr
 	}
