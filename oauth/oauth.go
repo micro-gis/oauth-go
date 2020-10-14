@@ -17,6 +17,7 @@ const (
 	headerXClientId = "X-Client-Id"
 	headerXCallerId = "X-Caller-Id"
 	paramAccessToken="access_token"
+	baseOauthURL="http://127.0.0.1:8087"
 )
 
 var  (
@@ -112,8 +113,10 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXCallerId)
 }
 
+
+
 func getAccessToken(accessTokenId string)(*accessToken, errors2.RestErr){
-	response, err := oauthRestClient.Get(fmt.Sprintf("http://127.0.0.1:8087/oauth/access_token/%s",accessTokenId))
+	response, err := oauthRestClient.Get(fmt.Sprintf("%s/oauth/access_token/%s",baseOauthURL, accessTokenId))
 	if err != nil {
 		return nil, errors2.NewBadRequestError("invalid access token provided")
 	}
@@ -134,4 +137,20 @@ func getAccessToken(accessTokenId string)(*accessToken, errors2.RestErr){
 		return nil, errors2.NewInternalServerError("error when trying to unmarshall access token", err)
 	}
 	return &at, nil
+}
+
+func deleteAllAccessToken(accessTokenId string)errors2.RestErr{
+	response, err := oauthRestClient.Delete(fmt.Sprintf("%s/oauth/access_token/%s",baseOauthURL, accessTokenId))
+	if response == nil || response.StatusCode < 100 {
+		return errors2.NewInternalServerError("invalid restClient response when trying to get access token", err)
+	}
+
+	if response.StatusCode > 299 {
+		restErr, err := errors2.NewRestErrorFromBytes(response.Bytes())
+		if err != nil {
+			return errors2.NewInternalServerError("invalid error interface when trying to login user", err)
+		}
+		return restErr
+	}
+	return nil
 }
