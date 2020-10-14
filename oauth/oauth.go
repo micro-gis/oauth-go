@@ -42,10 +42,24 @@ func getTokenParamFromRequest(request *http.Request) (*string, errors2.RestErr) 
 }
 
 func IsPublic(request *http.Request) bool {
+	err := AuthenticateRequest(request)
+	if err != nil {
+		return true
+	}
 	if request == nil {
 		return true
 	}
-	return request.Header.Get(headerPublic) == "true"
+	if request.Header.Get(headerXCallerId) != "" {
+		return false
+	}
+	if request.Header.Get(headerPublic) == "true" {
+		return true
+	}
+	if request.Header.Get(headerPublic) == "" && request.Header.Get(headerXCallerId) == "" {
+		return true
+	}
+
+	return true
 }
 
 func AuthenticateRequest(request *http.Request) errors2.RestErr{
