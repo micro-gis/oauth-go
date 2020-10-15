@@ -6,6 +6,7 @@ import (
 	errors2 "github.com/micro-gis/utils/rest_errors"
 	"github.com/yossefaz/go-http-client/gohttp"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,11 +17,12 @@ const (
 	headerXClientId = "X-Client-Id"
 	headerXCallerId = "X-Caller-Id"
 	paramAccessToken="access_token"
-	baseOauthURL="http://127.0.0.1:8087"
+
 )
 
 var  (
 	oauthRestClient gohttp.Client
+	baseOauthURL=os.Getenv("OAUTH_API_URL")
 )
 
 type accessToken struct {
@@ -42,13 +44,13 @@ func getTokenParamFromRequest(request *http.Request) (*string, errors2.RestErr) 
 }
 
 func IsPublic(request *http.Request) bool {
-	err := AuthenticateRequest(request)
-	if err != nil {
-		return true
-	}
 	if request == nil {
 		return true
 	}
+	//err := AuthenticateRequest(request)
+	//if err != nil {
+	//	return true
+	//}
 	if request.Header.Get(headerXCallerId) != "" {
 		return false
 	}
@@ -123,7 +125,7 @@ func getAccessToken(accessTokenId string)(*accessToken, errors2.RestErr){
 	if err != nil {
 		return nil, errors2.NewBadRequestError("invalid access token provided")
 	}
-	if response == nil || response.StatusCode < 100 {
+	if response == nil || len(response.Body) == 0{
 		return nil, errors2.NewInternalServerError("invalid restClient response when trying to get access token", err)
 	}
 
